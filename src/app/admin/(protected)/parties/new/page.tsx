@@ -1,6 +1,8 @@
 import PartyForm from "../PartyForm";
 import { createPartyAction } from "../actions";
 
+export const dynamic = "force-dynamic";
+
 export default function NewPartyPage() {
   return (
     <div>

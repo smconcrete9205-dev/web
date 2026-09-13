@@ -3,6 +3,8 @@ import { createInvoiceAction } from "../actions";
 import { getPartiesByType } from "@/lib/parties";
 import { getSiteSettings } from "@/lib/settings";
 
+export const dynamic = "force-dynamic";
+
 export default async function NewInvoicePage() {
   const [parties, settings] = await Promise.all([
     getPartiesByType("CUSTOMER"),

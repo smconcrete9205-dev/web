@@ -85,8 +85,16 @@ function toRowData(input: ProductInput) {
 }
 
 export async function getAllProducts(): Promise<Product[]> {
-  const rows = await prisma.product.findMany({ orderBy: { createdAt: "asc" } });
-  return rows.map(toProduct);
+  try {
+    const rows = await prisma.product.findMany({ orderBy: { createdAt: "asc" } });
+    return rows.map(toProduct);
+  } catch (err) {
+    // Falls back to an empty catalog rather than throwing, so a DB outage or
+    // misconfiguration (e.g. a missing DATABASE_URL) doesn't crash the build
+    // or take down the whole site — see getSiteSettings() for the same pattern.
+    console.error("getAllProducts: falling back to an empty list —", err);
+    return [];
+  }
 }
 
 export async function getAllProductSlugs(): Promise<string[]> {

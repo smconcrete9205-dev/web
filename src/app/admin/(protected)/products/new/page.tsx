@@ -1,6 +1,8 @@
 import ProductForm from "../ProductForm";
 import { createProductAction } from "../actions";
 
+export const dynamic = "force-dynamic";
+
 export default function NewProductPage() {
   return (
     <div>

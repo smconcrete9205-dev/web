@@ -38,7 +38,16 @@ const FALLBACK_SETTINGS: SiteSettings = {
 };
 
 export async function getSiteSettings(): Promise<SiteSettings> {
-  const row = await prisma.siteSettings.findUnique({ where: { id: SETTINGS_ID } });
+  let row;
+  try {
+    row = await prisma.siteSettings.findUnique({ where: { id: SETTINGS_ID } });
+  } catch (err) {
+    // Falls back rather than throwing so a DB outage/misconfiguration (e.g. a
+    // missing DATABASE_URL at build time) doesn't take down every page — this
+    // function is called from the root layout, so every route depends on it.
+    console.error("getSiteSettings: falling back to defaults —", err);
+    return FALLBACK_SETTINGS;
+  }
   if (!row) return FALLBACK_SETTINGS;
 
   return {
