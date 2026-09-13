@@ -1,0 +1,118 @@
+// Prisma schema for the SM Concrete Products admin panel.
+// SQLite is used as a zero-config, file-based database — fine for a single-server
+// deployment (VPS/self-hosted Node). If you deploy to a serverless platform
+// (Vercel, etc.) with an ephemeral filesystem, switch the datasource below to a
+// hosted database (Postgres/MySQL) — only this block and DATABASE_URL change.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Product {
+  id               String   @id @default(cuid())
+  slug             String   @unique
+  name             String
+  shortDescription String
+  /// JSON-encoded string[] — paragraphs of the full description
+  description      String
+  /// JSON-encoded string[] — bullet list of features
+  features         String
+  /// JSON-encoded string[] — bullet list of applications
+  applications     String
+  /// JSON-encoded { label: string; value: string }[]
+  specs            String
+  /// JSON-encoded { src: string; alt: string }[]
+  images           String
+  seoTitle         String
+  seoDescription   String
+  /// JSON-encoded string[]
+  seoKeywords      String
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model Lead {
+  id         String   @id @default(cuid())
+  name       String
+  phone      String
+  product    String
+  quantity   String
+  message    String
+  sourcePage String
+  /// "new" | "contacted" | "closed"
+  status     String   @default("new")
+  createdAt  DateTime @default(now())
+}
+
+/// Single-row table holding editable sitewide contact/company details.
+model SiteSettings {
+  id                Int      @id @default(1)
+  phone             String
+  phoneDisplay      String
+  whatsappNumber    String
+  email             String
+  addressStreet     String
+  addressLocality   String
+  addressRegion     String
+  addressPostalCode String
+  mapEmbedSrc       String
+  /// Our own GSTIN — used on invoices and to determine CGST+SGST vs IGST
+  /// split (intra-state vs inter-state) against a party's state.
+  gstin             String   @default("")
+  updatedAt         DateTime @updatedAt
+}
+
+/// Customers and vendors used across invoices, purchase orders, and payments.
+model Party {
+  id                  String   @id @default(cuid())
+  /// "CUSTOMER" | "VENDOR" | "BOTH"
+  type                String
+  name                String
+  gstin               String?
+  pan                 String?
+  phone               String
+  email               String?
+  addressStreet       String?
+  addressLocality     String?
+  /// State — used to determine CGST+SGST (same state as us) vs IGST (different state) on invoices.
+  addressRegion       String?
+  addressPostalCode   String?
+  /// Ledger opening balance in paise. Positive = party owes us (receivable),
+  /// negative = we owe the party (payable).
+  openingBalancePaise Int      @default(0)
+  notes               String?
+  isActive            Boolean  @default(true)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  invoices            Invoice[]
+}
+
+/// GST sales invoice raised against a customer.
+model Invoice {
+  id            String    @id @default(cuid())
+  invoiceNumber String    @unique
+  partyId       String
+  party         Party     @relation(fields: [partyId], references: [id])
+  invoiceDate   DateTime  @default(now())
+  dueDate       DateTime?
+  /// JSON-encoded { description, hsnCode, quantity, unit, rate, gstRate }[]
+  items         String
+  /// State the goods/services are supplied to — determines CGST+SGST vs IGST.
+  placeOfSupply String
+  subtotalPaise Int
+  cgstPaise     Int       @default(0)
+  sgstPaise     Int       @default(0)
+  igstPaise     Int       @default(0)
+  totalPaise    Int
+  /// "DRAFT" | "SENT" | "PAID" | "PARTIALLY_PAID" | "OVERDUE" | "CANCELLED"
+  status        String    @default("DRAFT")
+  notes         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}

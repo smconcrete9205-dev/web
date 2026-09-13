@@ -1,0 +1,25 @@
+<svg width="440" height="200" viewBox="0 0 440 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="smcpLogoTitle">
+  <title id="smcpLogoTitle">SM Concrete Products logo</title>
+  <defs>
+    <linearGradient id="plaqueFace" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f2f1ee"/>
+      <stop offset="100%" stop-color="#dedcd6"/>
+    </linearGradient>
+  </defs>
+
+  <!-- 3D bottom edge -->
+  <rect x="18" y="46" width="404" height="120" rx="8" fill="#87877d"/>
+  <!-- plaque face -->
+  <rect x="12" y="34" width="404" height="120" rx="8" fill="url(#plaqueFace)" stroke="#57564f" stroke-width="3"/>
+  <!-- inner border -->
+  <rect x="30" y="52" width="368" height="84" rx="4" fill="none" stroke="#a3a39b" stroke-width="2"/>
+
+  <!-- corner rivets -->
+  <circle cx="44" cy="66" r="4.5" fill="#87877d"/>
+  <circle cx="384" cy="66" r="4.5" fill="#87877d"/>
+  <circle cx="44" cy="122" r="4.5" fill="#87877d"/>
+  <circle cx="384" cy="122" r="4.5" fill="#87877d"/>
+
+  <text x="220" y="102" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-weight="800" font-size="38" letter-spacing="1" fill="#102a43">SM CONCRETE</text>
+  <text x="220" y="126" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-weight="600" font-size="16" letter-spacing="6" fill="#f5840b">PRODUCTS</text>
+</svg>
