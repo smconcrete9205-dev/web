@@ -1,16 +1,16 @@
 // Prisma schema for the SM Concrete Products admin panel.
-// SQLite is used as a zero-config, file-based database — fine for a single-server
-// deployment (VPS/self-hosted Node). If you deploy to a serverless platform
-// (Vercel, etc.) with an ephemeral filesystem, switch the datasource below to a
-// hosted database (Postgres/MySQL) — only this block and DATABASE_URL change.
+// Supabase Postgres. DATABASE_URL = pooled connection (port 6543, pgbouncer) used
+// at runtime on serverless; DIRECT_URL = direct connection (port 5432) used by
+// `prisma db push` / migrations.
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model Product {
