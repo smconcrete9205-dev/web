@@ -55,7 +55,21 @@ export default async function AdminDashboardPage() {
         {recentLeads.length === 0 ? (
           <p className="mt-4 text-sm text-concrete-500">No leads yet.</p>
         ) : (
-          <div className="mt-4 overflow-x-auto rounded-lg border border-concrete-200 bg-white">
+          <>
+<div className="mt-4 space-y-3 lg:hidden">
+            {recentLeads.map((lead) => (
+              <div key={lead.id} className="rounded-lg border border-concrete-200 bg-white p-4 shadow-sm">
+                <div className="flex items-start justify-between gap-3">
+                  <p className="font-semibold text-navy-900">{lead.name}</p>
+                  <span className="shrink-0 text-xs capitalize text-concrete-600">{lead.status}</span>
+                </div>
+                <a href={`tel:${lead.phone}`} className="text-sm font-medium text-accent-600">{lead.phone}</a>
+                <p className="mt-1 text-sm text-concrete-700">{lead.product || "—"}</p>
+                <p className="mt-1 text-xs text-concrete-500">{new Date(lead.timestamp).toLocaleString("en-IN")}</p>
+              </div>
+            ))}
+          </div>
+          <div className="mt-4 hidden overflow-x-auto rounded-lg border border-concrete-200 bg-white lg:block">
             <table className="w-full text-left text-sm">
               <thead className="bg-concrete-50 text-xs uppercase tracking-wide text-concrete-500">
                 <tr>
@@ -81,6 +95,7 @@ export default async function AdminDashboardPage() {
               </tbody>
             </table>
           </div>
+        </>
         )}
       </div>
     </div>

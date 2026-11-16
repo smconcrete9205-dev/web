@@ -20,8 +20,35 @@ export default async function AdminLeadsPage() {
           will show up here.
         </p>
       ) : (
-        <div className="mt-6 overflow-x-auto rounded-lg border border-concrete-200 bg-white">
-          <table className="w-full min-w-[900px] text-left text-sm">
+        <>
+<div className="mt-6 space-y-3 lg:hidden">
+          {leads.map((lead) => (
+            <div key={lead.id} className="rounded-lg border border-concrete-200 bg-white p-4 shadow-sm">
+              <div className="flex items-start justify-between gap-3">
+                <p className="font-semibold text-navy-900">{lead.name}</p>
+                <p className="shrink-0 text-xs text-concrete-500">
+                  {new Date(lead.timestamp).toLocaleString("en-IN")}
+                </p>
+              </div>
+              <a href={`tel:${lead.phone}`} className="mt-1 inline-block text-sm font-medium text-accent-600">
+                {lead.phone}
+              </a>
+              <dl className="mt-3 space-y-1 text-sm text-concrete-700">
+                <div className="flex gap-2"><dt className="w-16 shrink-0 text-concrete-500">Product</dt><dd>{lead.product || "—"}</dd></div>
+                <div className="flex gap-2"><dt className="w-16 shrink-0 text-concrete-500">Qty</dt><dd>{lead.quantity || "—"}</dd></div>
+                <div className="flex gap-2"><dt className="w-16 shrink-0 text-concrete-500">Source</dt><dd className="break-all">{lead.sourcePage}</dd></div>
+                {lead.message && (
+                  <div className="flex gap-2"><dt className="w-16 shrink-0 text-concrete-500">Message</dt><dd>{lead.message}</dd></div>
+                )}
+              </dl>
+              <div className="mt-3 border-t border-concrete-100 pt-3">
+                <LeadRowControls id={lead.id} status={lead.status} />
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="mt-6 hidden overflow-x-auto rounded-lg border border-concrete-200 bg-white lg:block">
+          <table className="w-full text-left text-sm">
             <thead className="bg-concrete-50 text-xs uppercase tracking-wide text-concrete-500">
               <tr>
                 <th className="px-4 py-3">Received</th>
@@ -62,6 +89,7 @@ export default async function AdminLeadsPage() {
             </tbody>
           </table>
         </div>
+        </>
       )}
     </div>
   );

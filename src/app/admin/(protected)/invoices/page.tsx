@@ -34,7 +34,30 @@ export default async function AdminInvoicesPage() {
         </Link>
       </div>
 
-      <div className="mt-6 overflow-x-auto rounded-lg border border-concrete-200 bg-white">
+      <div className="mt-6 space-y-3 lg:hidden">
+        {invoices.map((invoice) => (
+          <div key={invoice.id} className="rounded-lg border border-concrete-200 bg-white p-4 shadow-sm">
+            <div className="flex items-start justify-between gap-3">
+              <p className="font-mono text-xs font-medium text-navy-900">{invoice.invoiceNumber}</p>
+              <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLE[invoice.status]}`}>
+                {invoice.status.replace("_", " ")}
+              </span>
+            </div>
+            <p className="mt-1 font-medium text-concrete-700">{invoice.partyName}</p>
+            <div className="mt-1 flex items-center justify-between text-sm">
+              <span className="text-concrete-500">{invoice.invoiceDate.toLocaleDateString("en-IN")}</span>
+              <span className="font-semibold text-navy-900">{formatINR(invoice.totalPaise)}</span>
+            </div>
+            <div className="mt-3 flex items-center gap-5 border-t border-concrete-100 pt-3">
+              <Link href={`/admin/invoices/${invoice.id}/print`} target="_blank" className="text-sm font-medium text-navy-700">Print</Link>
+              <Link href={`/admin/invoices/${invoice.id}`} className="text-sm font-medium text-accent-600">Edit</Link>
+              <DeleteInvoiceButton id={invoice.id} invoiceNumber={invoice.invoiceNumber} />
+            </div>
+          </div>
+        ))}
+        {invoices.length === 0 && <p className="py-8 text-center text-sm text-concrete-500">No invoices yet.</p>}
+      </div>
+      <div className="mt-6 hidden overflow-x-auto rounded-lg border border-concrete-200 bg-white lg:block">
         <table className="w-full text-left text-sm">
           <thead className="bg-concrete-50 text-xs uppercase tracking-wide text-concrete-500">
             <tr>
