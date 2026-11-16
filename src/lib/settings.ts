@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { prisma } from "@/lib/prisma";
 import { COMPANY } from "@/lib/constants";
 
@@ -37,7 +38,7 @@ const FALLBACK_SETTINGS: SiteSettings = {
   gstin: COMPANY.gstin,
 };
 
-export async function getSiteSettings(): Promise<SiteSettings> {
+export const getSiteSettings = cache(async (): Promise<SiteSettings> => {
   let row;
   try {
     row = await prisma.siteSettings.findUnique({ where: { id: SETTINGS_ID } });
@@ -62,7 +63,7 @@ export async function getSiteSettings(): Promise<SiteSettings> {
     mapEmbedSrc: row.mapEmbedSrc,
     gstin: row.gstin,
   };
-}
+});
 
 export async function updateSiteSettings(input: SiteSettings): Promise<SiteSettings> {
   const row = await prisma.siteSettings.upsert({

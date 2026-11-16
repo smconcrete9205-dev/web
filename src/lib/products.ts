@@ -1,3 +1,4 @@
+import { cache } from "react";
 import type { Product as ProductRow } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
@@ -84,7 +85,7 @@ function toRowData(input: ProductInput) {
   };
 }
 
-export async function getAllProducts(): Promise<Product[]> {
+export const getAllProducts = cache(async (): Promise<Product[]> => {
   try {
     const rows = await prisma.product.findMany({ orderBy: { createdAt: "asc" } });
     return rows.map(toProduct);
@@ -95,17 +96,17 @@ export async function getAllProducts(): Promise<Product[]> {
     console.error("getAllProducts: falling back to an empty list —", err);
     return [];
   }
-}
+});
 
 export async function getAllProductSlugs(): Promise<string[]> {
   const rows = await prisma.product.findMany({ select: { slug: true } });
   return rows.map((r) => r.slug);
 }
 
-export async function getProductBySlug(slug: string): Promise<Product | null> {
+export const getProductBySlug = cache(async (slug: string): Promise<Product | null> => {
   const row = await prisma.product.findUnique({ where: { slug } });
   return row ? toProduct(row) : null;
-}
+});
 
 export async function getProductById(id: string): Promise<Product | null> {
   const row = await prisma.product.findUnique({ where: { id } });
