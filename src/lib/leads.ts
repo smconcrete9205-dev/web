@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { sendLeadEmail } from "@/lib/notify";
 
 /**
  * Central lead-capture module.
@@ -61,6 +62,7 @@ export async function saveLead(leadData: Lead): Promise<SaveLeadResult> {
         sourcePage: leadData.sourcePage,
       },
     });
+    await sendLeadEmail(leadData);
     return { success: true };
   } catch (err) {
     console.error("[Lead Save Failed]", err);
