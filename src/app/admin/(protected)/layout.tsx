@@ -18,7 +18,7 @@ export default function AdminProtectedLayout({
 }) {
   return (
     <div className="flex min-h-screen bg-concrete-50">
-      <aside className="hidden w-60 shrink-0 flex-col border-r border-concrete-200 bg-navy-900 sm:flex">
+      <aside className="hidden w-60 shrink-0 flex-col border-r border-concrete-200 bg-navy-900 md:flex">
         <div className="flex items-center gap-2 border-b border-navy-800 px-5 py-5">
           <Image
             src="/images/logo-mark.svg"
@@ -64,7 +64,8 @@ export default function AdminProtectedLayout({
 
       <div className="min-w-0 flex-1">
         {/* Mobile top bar (sidebar is desktop-only for this internal tool) */}
-        <div className="flex items-center justify-between border-b border-concrete-200 bg-navy-900 px-4 py-3 sm:hidden">
+        <div className="sticky top-0 z-40 md:hidden">
+        <div className="flex items-center justify-between border-b border-navy-800 bg-navy-900 px-4 py-3">
           <span className="text-sm font-bold text-white">Admin Panel</span>
           <form action={logout}>
             <button type="submit" className="text-xs font-medium text-navy-300">
@@ -72,7 +73,7 @@ export default function AdminProtectedLayout({
             </button>
           </form>
         </div>
-        <nav aria-label="Admin mobile" className="flex gap-1 overflow-x-auto border-b border-concrete-200 bg-white px-3 py-2 sm:hidden">
+        <nav aria-label="Admin mobile" className="flex gap-1 overflow-x-auto border-b border-concrete-200 bg-white px-3 py-2 shadow-sm">
           {NAV_LINKS.map((link) => (
             <Link
               key={link.href}
@@ -83,6 +84,7 @@ export default function AdminProtectedLayout({
             </Link>
           ))}
         </nav>
+        </div>
 
         <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">{children}</main>
       </div>

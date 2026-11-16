@@ -1,6 +1,5 @@
 import Link from "next/link";
-import { getAllLeads } from "@/lib/leads";
-import { getAllProducts } from "@/lib/products";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
@@ -17,10 +16,20 @@ function StatCard({ label, value, href }: { label: string; value: number; href: 
 }
 
 export default async function AdminDashboardPage() {
-  const [leads, products] = await Promise.all([getAllLeads(), getAllProducts()]);
-
-  const newLeads = leads.filter((l) => l.status === "new").length;
-  const recentLeads = leads.slice(0, 5);
+  const [totalLeads, newLeads, productCount, recentRows] = await Promise.all([
+    prisma.lead.count(),
+    prisma.lead.count({ where: { status: "new" } }),
+    prisma.product.count(),
+    prisma.lead.findMany({ orderBy: { createdAt: "desc" }, take: 5 }),
+  ]);
+  const recentLeads = recentRows.map((r) => ({
+    id: r.id,
+    name: r.name,
+    phone: r.phone,
+    product: r.product,
+    status: r.status,
+    timestamp: r.createdAt.toISOString(),
+  }));
 
   return (
     <div>
@@ -30,9 +39,9 @@ export default async function AdminDashboardPage() {
       </p>
 
       <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <StatCard label="Total Leads" value={leads.length} href="/admin/leads" />
+        <StatCard label="Total Leads" value={totalLeads} href="/admin/leads" />
         <StatCard label="New Leads" value={newLeads} href="/admin/leads" />
-        <StatCard label="Products" value={products.length} href="/admin/products" />
+        <StatCard label="Products" value={productCount} href="/admin/products" />
       </div>
 
       <div className="mt-8">
