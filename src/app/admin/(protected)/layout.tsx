@@ -22,6 +22,7 @@ export default function AdminProtectedLayout({
         <div className="flex items-center gap-2 border-b border-navy-800 px-5 py-5">
           <Image
             src="/images/logo-mark.svg"
+            unoptimized
             alt=""
             width={32}
             height={32}
@@ -61,7 +62,7 @@ export default function AdminProtectedLayout({
         </div>
       </aside>
 
-      <div className="flex-1">
+      <div className="min-w-0 flex-1">
         {/* Mobile top bar (sidebar is desktop-only for this internal tool) */}
         <div className="flex items-center justify-between border-b border-concrete-200 bg-navy-900 px-4 py-3 sm:hidden">
           <span className="text-sm font-bold text-white">Admin Panel</span>

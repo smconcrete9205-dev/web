@@ -1,15 +1,8 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
 import "./globals.css";
 import JsonLd from "@/components/JsonLd";
 import { organizationSchema } from "@/lib/schema";
 import { COMPANY, SITE_URL } from "@/lib/constants";
-
-const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-inter",
-  display: "swap",
-});
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -52,7 +45,7 @@ export default async function RootLayout({
   const orgSchema = await organizationSchema();
 
   return (
-    <html lang="en" className={inter.variable}>
+    <html lang="en">
       <body className="flex min-h-screen flex-col font-sans antialiased">
         <JsonLd data={orgSchema} />
         {children}

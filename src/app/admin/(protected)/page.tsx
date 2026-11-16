@@ -46,7 +46,7 @@ export default async function AdminDashboardPage() {
         {recentLeads.length === 0 ? (
           <p className="mt-4 text-sm text-concrete-500">No leads yet.</p>
         ) : (
-          <div className="mt-4 overflow-hidden rounded-lg border border-concrete-200 bg-white">
+          <div className="mt-4 overflow-x-auto rounded-lg border border-concrete-200 bg-white">
             <table className="w-full text-left text-sm">
               <thead className="bg-concrete-50 text-xs uppercase tracking-wide text-concrete-500">
                 <tr>

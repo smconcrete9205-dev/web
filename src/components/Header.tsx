@@ -23,6 +23,7 @@ export default function Header({ phone, phoneDisplay }: HeaderProps) {
         <Link href="/" className="flex items-center" aria-label={`${COMPANY.name} — Home`}>
           <Image
             src="/images/logo.svg"
+            unoptimized
             alt={COMPANY.name}
             width={220}
             height={100}

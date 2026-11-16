@@ -18,6 +18,7 @@ export default function AdminLoginPage({
         <div className="flex flex-col items-center">
           <Image
             src="/images/logo-mark.svg"
+            unoptimized
             alt=""
             width={48}
             height={48}

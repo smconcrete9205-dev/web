@@ -15,6 +15,7 @@ export default async function Footer() {
           <div>
             <Image
               src="/images/logo.svg"
+              unoptimized
               alt={COMPANY.name}
               width={220}
               height={100}
