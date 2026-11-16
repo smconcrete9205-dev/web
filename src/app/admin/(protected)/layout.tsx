@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { logout } from "@/app/admin/login/actions";
+import AdminMobileNav from "./AdminMobileNav";
 
 const NAV_LINKS = [
   { href: "/admin", label: "Dashboard" },
@@ -63,28 +64,7 @@ export default function AdminProtectedLayout({
       </aside>
 
       <div className="min-w-0 flex-1">
-        {/* Mobile top bar (sidebar is desktop-only for this internal tool) */}
-        <div className="sticky top-0 z-40 md:hidden">
-        <div className="flex items-center justify-between border-b border-navy-800 bg-navy-900 px-4 py-3">
-          <span className="text-sm font-bold text-white">Admin Panel</span>
-          <form action={logout}>
-            <button type="submit" className="text-xs font-medium text-navy-300">
-              Log out
-            </button>
-          </form>
-        </div>
-        <nav aria-label="Admin mobile" className="flex gap-1 overflow-x-auto border-b border-concrete-200 bg-white px-3 py-2 shadow-sm">
-          {NAV_LINKS.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className="shrink-0 rounded-md px-3 py-1.5 text-xs font-medium text-navy-700 hover:bg-navy-50"
-            >
-              {link.label}
-            </Link>
-          ))}
-        </nav>
-        </div>
+        <AdminMobileNav links={NAV_LINKS} logoutAction={logout} />
 
         <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">{children}</main>
       </div>
