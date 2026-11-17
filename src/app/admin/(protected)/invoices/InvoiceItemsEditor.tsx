@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { InvoiceItem } from "@/lib/invoices";
 import { formatINR } from "@/lib/money";
+import type { ItemSuggestion } from "@/lib/itemSuggestions";
 
 const EMPTY_ITEM: InvoiceItem = {
   description: "",
@@ -19,8 +20,11 @@ const inputClass =
 export default function InvoiceItemsEditor({
   initialItems,
   onTotalsChange,
+  suggestions = [],
 }: {
   initialItems: InvoiceItem[];
+  /** Catalog products to pick from; picking one fills HSN / unit / rate / GST. */
+  suggestions?: ItemSuggestion[];
   /** Called with the current line-item subtotal (rupees, pre-GST) whenever items change — used to show a live preview. */
   onTotalsChange?: (subtotal: number, gst: number) => void;
 }) {
@@ -48,6 +52,22 @@ export default function InvoiceItemsEditor({
     onTotalsChange(subtotal, gst);
   }
 
+  /** Typing or picking a name that matches a known product auto-fills its defaults. */
+  function onDescriptionChange(index: number, value: string) {
+    const match = suggestions.find((s) => s.name.toLowerCase() === value.trim().toLowerCase());
+    if (match) {
+      update(index, {
+        description: match.name,
+        hsnCode: match.hsnCode,
+        unit: match.unit,
+        rate: match.rate,
+        gstRate: match.gstRate,
+      });
+    } else {
+      update(index, { description: value });
+    }
+  }
+
   function addRow() {
     setItems((prev) => [...prev, { ...EMPTY_ITEM }]);
   }
@@ -63,6 +83,11 @@ export default function InvoiceItemsEditor({
   return (
     <div>
       <input type="hidden" name="items" value={JSON.stringify(items)} />
+      <datalist id="invoice-products">
+        {suggestions.map((s) => (
+          <option key={s.name} value={s.name} />
+        ))}
+      </datalist>
 
       <div className="overflow-x-auto rounded-lg border border-concrete-200">
         <table className="w-full min-w-[720px] text-left text-sm">
@@ -84,8 +109,9 @@ export default function InvoiceItemsEditor({
                 <td className="px-3 py-2">
                   <input
                     value={item.description}
-                    onChange={(e) => update(i, { description: e.target.value })}
-                    placeholder="e.g. RCC Manhole Cover (Heavy Duty)"
+                    list="invoice-products"
+                    onChange={(e) => onDescriptionChange(i, e.target.value)}
+                    placeholder="Pick a product or type..."
                     className={inputClass}
                   />
                 </td>

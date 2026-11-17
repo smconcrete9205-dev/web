@@ -6,6 +6,7 @@ import type { Invoice, InvoiceStatus } from "@/lib/invoices";
 import type { InvoiceFormState } from "./actions";
 import { INDIAN_STATES } from "@/lib/indianStates";
 import { formatINR } from "@/lib/money";
+import type { ItemSuggestion } from "@/lib/itemSuggestions";
 import InvoiceItemsEditor from "./InvoiceItemsEditor";
 
 function SubmitButton({ label }: { label: string }) {
@@ -48,10 +49,11 @@ interface InvoiceFormProps {
   invoice?: Invoice;
   parties: { id: string; name: string; addressRegion: string }[];
   businessState: string;
+  suggestions?: ItemSuggestion[];
   action: (state: InvoiceFormState, formData: FormData) => Promise<InvoiceFormState>;
 }
 
-export default function InvoiceForm({ invoice, parties, businessState, action }: InvoiceFormProps) {
+export default function InvoiceForm({ invoice, parties, businessState, suggestions, action }: InvoiceFormProps) {
   const [state, formAction] = useFormState<InvoiceFormState, FormData>(action, {});
   const [partyId, setPartyId] = useState(invoice?.partyId ?? parties[0]?.id ?? "");
   const [placeOfSupply, setPlaceOfSupply] = useState(
@@ -133,16 +135,22 @@ export default function InvoiceForm({ invoice, parties, businessState, action }:
         <Field label="Status">
           <select
             name="status"
-            defaultValue={invoice?.status ?? ("DRAFT" as InvoiceStatus)}
+            defaultValue={
+              invoice?.status === "DRAFT" || invoice?.status === "CANCELLED"
+                ? invoice.status
+                : invoice
+                  ? "SENT"
+                  : ("DRAFT" as InvoiceStatus)
+            }
             className={inputClass}
           >
             <option value="DRAFT">Draft</option>
-            <option value="SENT">Sent</option>
-            <option value="PAID">Paid</option>
-            <option value="PARTIALLY_PAID">Partially Paid</option>
-            <option value="OVERDUE">Overdue</option>
+            <option value="SENT">Issued / Sent</option>
             <option value="CANCELLED">Cancelled</option>
           </select>
+          <p className="mt-1 text-xs text-concrete-500">
+            Paid / Partially Paid / Overdue update automatically from recorded payments and the due date.
+          </p>
         </Field>
       </div>
 
@@ -151,6 +159,7 @@ export default function InvoiceForm({ invoice, parties, businessState, action }:
         <div className="mt-2">
           <InvoiceItemsEditor
             initialItems={invoice?.items ?? []}
+            suggestions={suggestions}
             onTotalsChange={(subtotal, gst) => setPreview({ subtotal, gst })}
           />
         </div>

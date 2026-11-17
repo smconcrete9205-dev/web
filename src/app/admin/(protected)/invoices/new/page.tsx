@@ -2,13 +2,15 @@ import InvoiceForm from "../InvoiceForm";
 import { createInvoiceAction } from "../actions";
 import { getPartiesByType } from "@/lib/parties";
 import { getSiteSettings } from "@/lib/settings";
+import { getItemSuggestions } from "@/lib/itemSuggestions";
 
 export const dynamic = "force-dynamic";
 
 export default async function NewInvoicePage() {
-  const [parties, settings] = await Promise.all([
+  const [parties, settings, suggestions] = await Promise.all([
     getPartiesByType("CUSTOMER"),
     getSiteSettings(),
+    getItemSuggestions(),
   ]);
 
   return (
@@ -32,6 +34,7 @@ export default async function NewInvoicePage() {
           <InvoiceForm
             parties={parties.map((p) => ({ id: p.id, name: p.name, addressRegion: p.addressRegion }))}
             businessState={settings.addressRegion}
+            suggestions={suggestions}
             action={createInvoiceAction}
           />
         )}

@@ -1,11 +1,13 @@
 "use server";
 
+import { licenseLockError } from "@/lib/license";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import {
   createInvoice,
   updateInvoice,
   deleteInvoice,
+  cancelInvoice,
   type InvoiceInput,
   type InvoiceItem,
   type InvoiceStatus,
@@ -43,7 +45,9 @@ function parseFormData(formData: FormData): InvoiceInput {
     dueDate: dueDateRaw ? new Date(dueDateRaw) : null,
     items: parseItems(formData.get("items")),
     placeOfSupply: String(formData.get("placeOfSupply") ?? "").trim(),
-    status: String(formData.get("status") ?? "DRAFT") as InvoiceStatus,
+    status: (["DRAFT", "SENT", "CANCELLED"].includes(String(formData.get("status")))
+      ? String(formData.get("status"))
+      : "DRAFT") as InvoiceStatus,
     notes: String(formData.get("notes") ?? "").trim(),
   };
 }
@@ -62,6 +66,8 @@ export async function createInvoiceAction(
   _prevState: InvoiceFormState,
   formData: FormData
 ): Promise<InvoiceFormState> {
+  const locked = await licenseLockError();
+  if (locked) return { error: locked };
   const input = parseFormData(formData);
   const validationError = validate(input);
   if (validationError) return { error: validationError };
@@ -78,6 +84,8 @@ export async function updateInvoiceAction(
   _prevState: InvoiceFormState,
   formData: FormData
 ): Promise<InvoiceFormState> {
+  const locked = await licenseLockError();
+  if (locked) return { error: locked };
   const input = parseFormData(formData);
   const validationError = validate(input);
   if (validationError) return { error: validationError };
@@ -90,7 +98,20 @@ export async function updateInvoiceAction(
   redirect("/admin/invoices");
 }
 
-export async function deleteInvoiceAction(id: string): Promise<void> {
-  await deleteInvoice(id);
+export async function deleteInvoiceAction(id: string): Promise<{ error?: string }> {
+  const locked = await licenseLockError();
+  if (locked) return { error: locked };
+  const result = await deleteInvoice(id);
+  if (!result.ok) return { error: result.error };
   revalidatePath("/admin/invoices");
+  return {};
+}
+
+export async function cancelInvoiceAction(id: string): Promise<{ error?: string }> {
+  const locked = await licenseLockError();
+  if (locked) return { error: locked };
+  await cancelInvoice(id);
+  revalidatePath("/admin/invoices");
+  revalidatePath("/admin");
+  return {};
 }

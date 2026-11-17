@@ -94,6 +94,23 @@ export async function updateParty(id: string, input: PartyInput): Promise<Party>
   return toParty(row);
 }
 
-export async function deleteParty(id: string): Promise<void> {
+/**
+ * Deletes a party only if nothing references it. A party with invoices,
+ * payments, challans or expenses must be deactivated instead so history stays intact.
+ */
+export async function deleteParty(id: string): Promise<{ ok: boolean; error?: string }> {
+  const [invoices, payments, challans] = await Promise.all([
+    prisma.invoice.count({ where: { partyId: id } }),
+    prisma.payment.count({ where: { partyId: id } }),
+    prisma.challan.count({ where: { partyId: id } }),
+  ]);
+  if (invoices + payments + challans > 0) {
+    return {
+      ok: false,
+      error:
+        "This party has invoices / payments / challans, so it can't be deleted. Edit the party and untick Active instead.",
+    };
+  }
   await prisma.party.delete({ where: { id } });
+  return { ok: true };
 }

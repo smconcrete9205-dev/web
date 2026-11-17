@@ -2,17 +2,23 @@ import Link from "next/link";
 import Image from "next/image";
 import { logout } from "@/app/admin/login/actions";
 import AdminMobileNav from "./AdminMobileNav";
+import LicenseBanner from "./LicenseBanner";
 
 const NAV_LINKS = [
   { href: "/admin", label: "Dashboard" },
   { href: "/admin/products", label: "Products" },
   { href: "/admin/leads", label: "Leads" },
+  { href: "/admin/analytics", label: "Website Traffic" },
   { href: "/admin/parties", label: "Parties" },
   { href: "/admin/invoices", label: "Invoices" },
+  { href: "/admin/payments", label: "Payments" },
+  { href: "/admin/challans", label: "Challans" },
+  { href: "/admin/expenses", label: "Expenses" },
+  { href: "/admin/reports", label: "Reports" },
   { href: "/admin/settings", label: "Settings" },
 ];
 
-export default function AdminProtectedLayout({
+export default async function AdminProtectedLayout({
   children,
 }: {
   children: React.ReactNode;
@@ -66,7 +72,10 @@ export default function AdminProtectedLayout({
       <div className="min-w-0 flex-1">
         <AdminMobileNav links={NAV_LINKS} logoutAction={logout} />
 
-        <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">{children}</main>
+        <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
+          <LicenseBanner />
+          {children}
+        </main>
       </div>
     </div>
   );

@@ -13,6 +13,9 @@
  */
 
 export const SESSION_COOKIE_NAME = "smcp_admin_session";
+export const SUPERADMIN_COOKIE_NAME = "smcp_super_session";
+/** Superadmin tokens use a derived secret so an admin cookie can never pass as superadmin. */
+export const superSecret = (secret: string) => `${secret}:superadmin`;
 const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
 interface SessionPayload {

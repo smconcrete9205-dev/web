@@ -1,4 +1,5 @@
-import type { Invoice as InvoiceRow, Party as PartyRow } from "@prisma/client";
+import { Prisma } from "@prisma/client";
+import type { Invoice as InvoiceRow, Party as PartyRow, Payment as PaymentRow } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { rupeesToPaise } from "@/lib/money";
 
@@ -39,6 +40,10 @@ export interface InvoiceTotals {
 }
 
 export interface Invoice extends InvoiceTotals {
+  /** Received (IN) payments linked to this invoice, in paise. */
+  paidPaise: number;
+  /** totalPaise - paidPaise (never below 0). */
+  balancePaise: number;
   id: string;
   invoiceNumber: string;
   partyId: string;
@@ -62,7 +67,15 @@ export type InvoiceInput = {
   notes: string;
 };
 
-type InvoiceRowWithParty = InvoiceRow & { party: PartyRow };
+type InvoiceRowWithParty = InvoiceRow & { party: PartyRow; payments: PaymentRow[] };
+
+const INCLUDE = { party: true, payments: true } as const;
+
+function startOfToday(): Date {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
 
 function parseItems(value: string): InvoiceItem[] {
   try {
@@ -74,7 +87,21 @@ function parseItems(value: string): InvoiceItem[] {
 }
 
 function toInvoice(row: InvoiceRowWithParty): Invoice {
+  const paidPaise = row.payments
+    .filter((p) => p.direction === "IN")
+    .reduce((sum, p) => sum + p.amountPaise, 0);
+  let status = row.status as InvoiceStatus;
+  // Past-due unpaid invoices show as OVERDUE automatically.
+  if (
+    (status === "SENT" || status === "PARTIALLY_PAID") &&
+    row.dueDate &&
+    row.dueDate < startOfToday()
+  ) {
+    status = "OVERDUE";
+  }
   return {
+    paidPaise,
+    balancePaise: Math.max(0, row.totalPaise - paidPaise),
     id: row.id,
     invoiceNumber: row.invoiceNumber,
     partyId: row.partyId,
@@ -88,7 +115,7 @@ function toInvoice(row: InvoiceRowWithParty): Invoice {
     sgstPaise: row.sgstPaise,
     igstPaise: row.igstPaise,
     totalPaise: row.totalPaise,
-    status: row.status as InvoiceStatus,
+    status,
     notes: row.notes ?? "",
     createdAt: row.createdAt,
   };
@@ -138,32 +165,39 @@ export function computeInvoiceTotals(
   };
 }
 
-/** Generates the next sequential invoice number for the current calendar year, e.g. INV-2026-0001. */
+/**
+ * Generates the next invoice number for the current calendar year, e.g.
+ * INV-2026-0001. Based on the highest existing number (not a row count), so
+ * deleting an invoice can never cause a duplicate.
+ */
 export async function generateInvoiceNumber(): Promise<string> {
-  const year = new Date().getFullYear();
-  const count = await prisma.invoice.count({
-    where: { invoiceNumber: { startsWith: `INV-${year}-` } },
+  const prefix = `INV-${new Date().getFullYear()}-`;
+  const last = await prisma.invoice.findFirst({
+    where: { invoiceNumber: { startsWith: prefix } },
+    orderBy: { invoiceNumber: "desc" },
+    select: { invoiceNumber: true },
   });
-  return `INV-${year}-${String(count + 1).padStart(4, "0")}`;
+  const lastSeq = last ? parseInt(last.invoiceNumber.slice(prefix.length), 10) || 0 : 0;
+  return `${prefix}${String(lastSeq + 1).padStart(4, "0")}`;
 }
 
 export async function getAllInvoices(): Promise<Invoice[]> {
   const rows = await prisma.invoice.findMany({
-    include: { party: true },
+    include: INCLUDE,
     orderBy: { invoiceDate: "desc" },
   });
   return rows.map(toInvoice);
 }
 
 export async function getInvoiceById(id: string): Promise<Invoice | null> {
-  const row = await prisma.invoice.findUnique({ where: { id }, include: { party: true } });
+  const row = await prisma.invoice.findUnique({ where: { id }, include: INCLUDE });
   return row ? toInvoice(row) : null;
 }
 
 export async function getInvoicesByParty(partyId: string): Promise<Invoice[]> {
   const rows = await prisma.invoice.findMany({
     where: { partyId },
-    include: { party: true },
+    include: INCLUDE,
     orderBy: { invoiceDate: "desc" },
   });
   return rows.map(toInvoice);
@@ -173,24 +207,34 @@ export async function createInvoice(
   input: InvoiceInput,
   businessState: string
 ): Promise<Invoice> {
-  const invoiceNumber = await generateInvoiceNumber();
   const totals = computeInvoiceTotals(input.items, businessState, input.placeOfSupply);
 
-  const row = await prisma.invoice.create({
-    data: {
-      invoiceNumber,
-      partyId: input.partyId,
-      invoiceDate: input.invoiceDate,
-      dueDate: input.dueDate,
-      items: JSON.stringify(input.items),
-      placeOfSupply: input.placeOfSupply,
-      status: input.status,
-      notes: input.notes || null,
-      ...totals,
-    },
-    include: { party: true },
-  });
-  return toInvoice(row);
+  // Retry if two invoices race for the same number (unique constraint).
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const invoiceNumber = await generateInvoiceNumber();
+    try {
+      const row = await prisma.invoice.create({
+        data: {
+          invoiceNumber,
+          partyId: input.partyId,
+          invoiceDate: input.invoiceDate,
+          dueDate: input.dueDate,
+          items: JSON.stringify(input.items),
+          placeOfSupply: input.placeOfSupply,
+          status: input.status,
+          notes: input.notes || null,
+          ...totals,
+        },
+        include: INCLUDE,
+      });
+      return toInvoice(row);
+    } catch (err) {
+      const duplicate =
+        err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002";
+      if (!duplicate || attempt === 4) throw err;
+    }
+  }
+  throw new Error("Could not generate a unique invoice number.");
 }
 
 export async function updateInvoice(
@@ -212,11 +256,52 @@ export async function updateInvoice(
       notes: input.notes || null,
       ...totals,
     },
-    include: { party: true },
+    include: INCLUDE,
   });
+  await syncInvoiceStatus(id);
   return toInvoice(row);
 }
 
-export async function deleteInvoice(id: string): Promise<void> {
+/**
+ * Re-derives PAID / PARTIALLY_PAID / SENT from the invoice's received
+ * payments. DRAFT and CANCELLED invoices are left alone. (OVERDUE is not
+ * stored — it is derived from the due date when reading.)
+ */
+export async function syncInvoiceStatus(invoiceId: string): Promise<void> {
+  const row = await prisma.invoice.findUnique({
+    where: { id: invoiceId },
+    include: { payments: true },
+  });
+  if (!row || row.status === "DRAFT" || row.status === "CANCELLED") return;
+
+  const paid = row.payments
+    .filter((p) => p.direction === "IN")
+    .reduce((sum, p) => sum + p.amountPaise, 0);
+
+  let next: InvoiceStatus = "SENT";
+  if (paid > 0 && paid >= row.totalPaise) next = "PAID";
+  else if (paid > 0) next = "PARTIALLY_PAID";
+
+  if (next !== row.status) {
+    await prisma.invoice.update({ where: { id: invoiceId }, data: { status: next } });
+  }
+}
+
+/** Marks an invoice cancelled (GST-friendly: the number is kept, not deleted). */
+export async function cancelInvoice(id: string): Promise<void> {
+  await prisma.invoice.update({ where: { id }, data: { status: "CANCELLED" } });
+}
+
+/**
+ * Only DRAFT invoices (never issued) may be deleted. Issued invoices must be
+ * cancelled instead so the invoice number sequence stays intact.
+ */
+export async function deleteInvoice(id: string): Promise<{ ok: boolean; error?: string }> {
+  const row = await prisma.invoice.findUnique({ where: { id }, select: { status: true } });
+  if (!row) return { ok: true };
+  if (row.status !== "DRAFT") {
+    return { ok: false, error: "Issued invoices can't be deleted — cancel the invoice instead." };
+  }
   await prisma.invoice.delete({ where: { id } });
+  return { ok: true };
 }

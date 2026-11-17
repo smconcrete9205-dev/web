@@ -26,6 +26,8 @@ export default async function InvoicePrintPage({ params }: { params: { id: strin
       <div className="mx-auto max-w-3xl bg-white p-8 shadow-sm print:max-w-none print:p-6 print:shadow-none">
         <div className="flex items-start justify-between border-b border-concrete-300 pb-4">
           <div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/images/logo.svg" alt="SM Concrete Products" className="mb-2 h-14 w-auto" style={{ printColorAdjust: "exact", WebkitPrintColorAdjust: "exact" }} />
             <h1 className="text-xl font-bold text-navy-900">{COMPANY.legalName}</h1>
             <p className="mt-1 text-xs text-concrete-600">
               {settings.addressStreet}, {settings.addressLocality}, {settings.addressRegion}{" "}
@@ -133,6 +135,18 @@ export default async function InvoicePrintPage({ params }: { params: { id: strin
               <span>Total</span>
               <span>{formatINR(invoice.totalPaise)}</span>
             </div>
+            {invoice.paidPaise > 0 && (
+              <>
+                <div className="flex justify-between text-concrete-700">
+                  <span>Received</span>
+                  <span>{formatINR(invoice.paidPaise)}</span>
+                </div>
+                <div className="flex justify-between font-semibold text-navy-900">
+                  <span>Balance Due</span>
+                  <span>{formatINR(invoice.balancePaise)}</span>
+                </div>
+              </>
+            )}
           </div>
         </div>
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useFormState, useFormStatus } from "react-dom";
-import type { Product } from "@/lib/products";
+import type { Product, ProductBilling } from "@/lib/products";
 import type { ProductFormState } from "./actions";
 import ImageManager from "./ImageManager";
 
@@ -41,10 +41,11 @@ const inputClass =
 
 interface ProductFormProps {
   product?: Product;
+  billing?: ProductBilling;
   action: (state: ProductFormState, formData: FormData) => Promise<ProductFormState>;
 }
 
-export default function ProductForm({ product, action }: ProductFormProps) {
+export default function ProductForm({ product, billing, action }: ProductFormProps) {
   const [state, formAction] = useFormState<ProductFormState, FormData>(action, {});
 
   return (
@@ -115,6 +116,42 @@ export default function ProductForm({ product, action }: ProductFormProps) {
           className={`${inputClass} font-mono`}
         />
       </Field>
+
+      <div className="border-t border-concrete-200 pt-6">
+        <h3 className="text-sm font-semibold text-navy-900">Billing defaults</h3>
+        <p className="mt-0.5 text-xs text-concrete-500">
+          Auto-fills invoice and challan lines when this product is picked. Never shown on the public site.
+        </p>
+        <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
+          <Field label="Rate (₹ per unit)">
+            <input
+              type="number"
+              name="rate"
+              step="0.01"
+              min="0"
+              defaultValue={billing?.rate ?? 0}
+              className={inputClass}
+            />
+          </Field>
+          <Field label="Unit">
+            <input name="unit" defaultValue={billing?.unit ?? "Nos"} className={inputClass} />
+          </Field>
+          <Field label="HSN code">
+            <input name="hsnCode" defaultValue={billing?.hsnCode ?? "6810"} className={`${inputClass} font-mono`} />
+          </Field>
+          <Field label="GST %">
+            <input
+              type="number"
+              name="gstRate"
+              step="0.1"
+              min="0"
+              max="100"
+              defaultValue={billing?.gstRate ?? 18}
+              className={inputClass}
+            />
+          </Field>
+        </div>
+      </div>
 
       <Field label="Images" hint="Upload files directly — no need to add them to the project yourself.">
         <ImageManager initialImages={product?.images ?? []} />

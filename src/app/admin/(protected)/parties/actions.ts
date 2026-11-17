@@ -1,5 +1,6 @@
 "use server";
 
+import { licenseLockError } from "@/lib/license";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import {
@@ -45,6 +46,8 @@ export async function createPartyAction(
   _prevState: PartyFormState,
   formData: FormData
 ): Promise<PartyFormState> {
+  const locked = await licenseLockError();
+  if (locked) return { error: locked };
   const input = parseFormData(formData);
   const validationError = validate(input);
   if (validationError) return { error: validationError };
@@ -60,6 +63,8 @@ export async function updatePartyAction(
   _prevState: PartyFormState,
   formData: FormData
 ): Promise<PartyFormState> {
+  const locked = await licenseLockError();
+  if (locked) return { error: locked };
   const input = parseFormData(formData);
   const validationError = validate(input);
   if (validationError) return { error: validationError };
@@ -70,7 +75,11 @@ export async function updatePartyAction(
   redirect("/admin/parties");
 }
 
-export async function deletePartyAction(id: string): Promise<void> {
-  await deleteParty(id);
+export async function deletePartyAction(id: string): Promise<{ error?: string }> {
+  const locked = await licenseLockError();
+  if (locked) return { error: locked };
+  const result = await deleteParty(id);
+  if (!result.ok) return { error: result.error };
   revalidatePath("/admin/parties");
+  return {};
 }

@@ -132,3 +132,38 @@ export async function updateProduct(
 export async function deleteProduct(id: string): Promise<void> {
   await prisma.product.delete({ where: { id } });
 }
+
+/**
+ * Billing defaults per product — used to auto-fill invoice and challan lines.
+ * Kept separate from `Product` so pricing never travels with public-site data.
+ */
+export interface ProductBilling {
+  hsnCode: string;
+  unit: string;
+  gstRate: number;
+  /** Default rate per unit in rupees (0 = not set). */
+  rate: number;
+}
+
+export const DEFAULT_BILLING: ProductBilling = { hsnCode: "6810", unit: "Nos", gstRate: 18, rate: 0 };
+
+export async function getProductBilling(id: string): Promise<ProductBilling> {
+  const row = await prisma.product.findUnique({
+    where: { id },
+    select: { hsnCode: true, unit: true, gstRate: true, ratePaise: true },
+  });
+  if (!row) return DEFAULT_BILLING;
+  return { hsnCode: row.hsnCode, unit: row.unit, gstRate: row.gstRate, rate: row.ratePaise / 100 };
+}
+
+export async function setProductBilling(id: string, billing: ProductBilling): Promise<void> {
+  await prisma.product.update({
+    where: { id },
+    data: {
+      hsnCode: billing.hsnCode,
+      unit: billing.unit,
+      gstRate: billing.gstRate,
+      ratePaise: Math.round(billing.rate * 100),
+    },
+  });
+}

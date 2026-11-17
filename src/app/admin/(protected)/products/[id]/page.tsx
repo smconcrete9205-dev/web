@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { getProductById } from "@/lib/products";
+import { getProductById, getProductBilling } from "@/lib/products";
 import ProductForm from "../ProductForm";
 import { updateProductAction } from "../actions";
 
@@ -8,6 +8,7 @@ export const dynamic = "force-dynamic";
 export default async function EditProductPage({ params }: { params: { id: string } }) {
   const product = await getProductById(params.id);
   if (!product) notFound();
+  const billing = await getProductBilling(product.id);
 
   const action = updateProductAction.bind(null, product.id);
 
@@ -17,7 +18,7 @@ export default async function EditProductPage({ params }: { params: { id: string
       <p className="mt-1 text-sm text-concrete-600">{product.name}</p>
 
       <div className="mt-6 max-w-3xl rounded-lg border border-concrete-200 bg-white p-6">
-        <ProductForm product={product} action={action} />
+        <ProductForm product={product} billing={billing} action={action} />
       </div>
     </div>
   );

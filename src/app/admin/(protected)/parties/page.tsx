@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getAllParties } from "@/lib/parties";
 import { formatINR } from "@/lib/money";
+import { getAllPartyBalances } from "@/lib/ledger";
 import DeletePartyButton from "./DeletePartyButton";
 
 export const dynamic = "force-dynamic";
@@ -11,8 +12,17 @@ const TYPE_LABEL: Record<string, string> = {
   BOTH: "Both",
 };
 
+function BalanceText({ paise }: { paise: number }) {
+  if (paise === 0) return <span>—</span>;
+  return paise > 0 ? (
+    <span className="font-medium text-green-700">{formatINR(paise)} to receive</span>
+  ) : (
+    <span className="font-medium text-red-600">{formatINR(-paise)} to pay</span>
+  );
+}
+
 export default async function AdminPartiesPage() {
-  const parties = await getAllParties();
+  const [parties, balances] = await Promise.all([getAllParties(), getAllPartyBalances()]);
 
   return (
     <div>
@@ -42,9 +52,10 @@ export default async function AdminPartiesPage() {
             <dl className="mt-2 space-y-1 text-sm text-concrete-700">
               <div className="flex gap-2"><dt className="w-16 shrink-0 text-concrete-500">GSTIN</dt><dd className="font-mono text-xs">{party.gstin || "—"}</dd></div>
               <div className="flex gap-2"><dt className="w-16 shrink-0 text-concrete-500">State</dt><dd>{party.addressRegion || "—"}</dd></div>
-              <div className="flex gap-2"><dt className="w-16 shrink-0 text-concrete-500">Balance</dt><dd>{formatINR(Math.round(party.openingBalance * 100))}</dd></div>
+              <div className="flex gap-2"><dt className="w-16 shrink-0 text-concrete-500">Balance</dt><dd><BalanceText paise={balances.get(party.id) ?? 0} /></dd></div>
             </dl>
             <div className="mt-3 flex items-center gap-5 border-t border-concrete-100 pt-3">
+              <Link href={`/admin/parties/${party.id}/ledger`} className="text-sm font-medium text-navy-700">Ledger</Link>
               <Link href={`/admin/parties/${party.id}`} className="text-sm font-medium text-accent-600">Edit</Link>
               <DeletePartyButton id={party.id} name={party.name} />
             </div>
@@ -61,7 +72,7 @@ export default async function AdminPartiesPage() {
               <th className="px-4 py-3">Phone</th>
               <th className="px-4 py-3">GSTIN</th>
               <th className="px-4 py-3">State</th>
-              <th className="px-4 py-3 text-right">Opening Balance</th>
+              <th className="px-4 py-3 text-right">Balance</th>
               <th className="px-4 py-3 text-right">Actions</th>
             </tr>
           </thead>
@@ -76,10 +87,16 @@ export default async function AdminPartiesPage() {
                 </td>
                 <td className="px-4 py-3 text-concrete-600">{party.addressRegion || "—"}</td>
                 <td className="px-4 py-3 text-right text-concrete-600">
-                  {formatINR(Math.round(party.openingBalance * 100))}
+                  <BalanceText paise={balances.get(party.id) ?? 0} />
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex items-center justify-end gap-4">
+                    <Link
+                      href={`/admin/parties/${party.id}/ledger`}
+                      className="text-sm font-medium text-navy-700 hover:text-navy-900"
+                    >
+                      Ledger
+                    </Link>
                     <Link
                       href={`/admin/parties/${party.id}`}
                       className="text-sm font-medium text-accent-600 hover:text-accent-700"

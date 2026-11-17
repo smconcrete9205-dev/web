@@ -1,26 +1,33 @@
 "use client";
 
-import { useTransition } from "react";
-import { deleteInvoiceAction } from "./actions";
+import { ConfirmActionButton } from "../FormUi";
+import { deleteInvoiceAction, cancelInvoiceAction } from "./actions";
 
-export default function DeleteInvoiceButton({ id, invoiceNumber }: { id: string; invoiceNumber: string }) {
-  const [isPending, startTransition] = useTransition();
-
-  function handleDelete() {
-    if (!confirm(`Delete invoice ${invoiceNumber}? This cannot be undone.`)) return;
-    startTransition(async () => {
-      await deleteInvoiceAction(id);
-    });
+/** Drafts can be deleted; issued invoices can only be cancelled (keeps GST numbering intact). */
+export default function DeleteInvoiceButton({
+  id,
+  invoiceNumber,
+  status,
+}: {
+  id: string;
+  invoiceNumber: string;
+  status: string;
+}) {
+  if (status === "CANCELLED") return null;
+  if (status === "DRAFT") {
+    return (
+      <ConfirmActionButton
+        label="Delete"
+        confirmText={`Delete draft invoice ${invoiceNumber}? This cannot be undone.`}
+        action={() => deleteInvoiceAction(id)}
+      />
+    );
   }
-
   return (
-    <button
-      type="button"
-      onClick={handleDelete}
-      disabled={isPending}
-      className="text-sm font-medium text-red-600 hover:text-red-700 disabled:opacity-50"
-    >
-      Delete
-    </button>
+    <ConfirmActionButton
+      label="Cancel"
+      confirmText={`Cancel invoice ${invoiceNumber}? It will stay on record as CANCELLED and stop counting in the party ledger.`}
+      action={() => cancelInvoiceAction(id)}
+    />
   );
 }

@@ -14,6 +14,10 @@ const STATUS_STYLE: Record<string, string> = {
   CANCELLED: "bg-concrete-100 text-concrete-400 line-through",
 };
 
+function canPay(invoice: { status: string; balancePaise: number }) {
+  return invoice.status !== "CANCELLED" && invoice.status !== "DRAFT" && invoice.balancePaise > 0;
+}
+
 export default async function AdminInvoicesPage() {
   const invoices = await getAllInvoices();
 
@@ -48,10 +52,16 @@ export default async function AdminInvoicesPage() {
               <span className="text-concrete-500">{invoice.invoiceDate.toLocaleDateString("en-IN")}</span>
               <span className="font-semibold text-navy-900">{formatINR(invoice.totalPaise)}</span>
             </div>
+            {invoice.balancePaise > 0 && invoice.status !== "CANCELLED" && invoice.status !== "DRAFT" && (
+              <p className="mt-1 text-xs text-red-600">Balance due: {formatINR(invoice.balancePaise)}</p>
+            )}
             <div className="mt-3 flex items-center gap-5 border-t border-concrete-100 pt-3">
               <Link href={`/admin/invoices/${invoice.id}/print`} target="_blank" className="text-sm font-medium text-navy-700">Print</Link>
+              {canPay(invoice) && (
+                <Link href={`/admin/payments/new?invoiceId=${invoice.id}`} className="text-sm font-medium text-green-700">Add payment</Link>
+              )}
               <Link href={`/admin/invoices/${invoice.id}`} className="text-sm font-medium text-accent-600">Edit</Link>
-              <DeleteInvoiceButton id={invoice.id} invoiceNumber={invoice.invoiceNumber} />
+              <DeleteInvoiceButton id={invoice.id} invoiceNumber={invoice.invoiceNumber} status={invoice.status} />
             </div>
           </div>
         ))}
@@ -66,6 +76,7 @@ export default async function AdminInvoicesPage() {
               <th className="px-4 py-3">Date</th>
               <th className="px-4 py-3">Status</th>
               <th className="px-4 py-3 text-right">Total</th>
+              <th className="px-4 py-3 text-right">Balance</th>
               <th className="px-4 py-3 text-right">Actions</th>
             </tr>
           </thead>
@@ -89,8 +100,19 @@ export default async function AdminInvoicesPage() {
                 <td className="px-4 py-3 text-right font-medium text-navy-900">
                   {formatINR(invoice.totalPaise)}
                 </td>
+                <td className="px-4 py-3 text-right text-concrete-700">
+                  {canPay(invoice) ? formatINR(invoice.balancePaise) : "—"}
+                </td>
                 <td className="px-4 py-3">
                   <div className="flex items-center justify-end gap-4">
+                    {canPay(invoice) && (
+                      <Link
+                        href={`/admin/payments/new?invoiceId=${invoice.id}`}
+                        className="text-sm font-medium text-green-700 hover:text-green-800"
+                      >
+                        Add payment
+                      </Link>
+                    )}
                     <Link
                       href={`/admin/invoices/${invoice.id}/print`}
                       target="_blank"
@@ -104,14 +126,14 @@ export default async function AdminInvoicesPage() {
                     >
                       Edit
                     </Link>
-                    <DeleteInvoiceButton id={invoice.id} invoiceNumber={invoice.invoiceNumber} />
+                    <DeleteInvoiceButton id={invoice.id} invoiceNumber={invoice.invoiceNumber} status={invoice.status} />
                   </div>
                 </td>
               </tr>
             ))}
             {invoices.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-concrete-500">
+                <td colSpan={7} className="px-4 py-8 text-center text-concrete-500">
                   No invoices yet.
                 </td>
               </tr>

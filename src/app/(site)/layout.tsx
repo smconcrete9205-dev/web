@@ -1,6 +1,7 @@
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import WhatsAppButton from "@/components/WhatsAppButton";
+import Tracker from "@/components/Tracker";
 import { getSiteSettings } from "@/lib/settings";
 
 export default async function SiteLayout({
@@ -15,6 +16,7 @@ export default async function SiteLayout({
       <Header phoneDisplay={settings.phoneDisplay} phone={settings.phone} />
       <main className="flex-1">{children}</main>
       <Footer />
+      <Tracker />
       <WhatsAppButton
         variant="floating"
         phoneNumber={settings.whatsappNumber}

@@ -32,6 +32,12 @@ model Product {
   seoDescription   String
   /// JSON-encoded string[]
   seoKeywords      String
+  /// Billing defaults used to auto-fill invoice / challan lines (never shown on the public site).
+  hsnCode          String   @default("6810")
+  unit             String   @default("Nos")
+  gstRate          Float    @default(18)
+  /// Default selling rate per unit, in paise. 0 = not set.
+  ratePaise        Int      @default(0)
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 }
@@ -67,6 +73,20 @@ model SiteSettings {
   updatedAt         DateTime @updatedAt
 }
 
+/// Single-row (id=1) trial/licence state, controlled from /superadmin.
+/// After the licence expires the admin panel stays open for products, leads
+/// and traffic, but ERP writes (invoices, payments, challans, ...) are locked.
+model License {
+  id          Int       @id @default(1)
+  trialEndsAt DateTime
+  /// Set when the client has paid; licence is active until this date.
+  paidUntil   DateTime?
+  priceInr    Int       @default(3999)
+  /// Optional custom message shown on the lock screen.
+  message     String    @default("")
+  updatedAt   DateTime  @updatedAt
+}
+
 /// Customers and vendors used across invoices, purchase orders, and payments.
 model Party {
   id                  String   @id @default(cuid())
@@ -90,7 +110,10 @@ model Party {
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 
-  invoices            Invoice[]
+  invoices Invoice[]
+  payments Payment[]
+  challans Challan[]
+  expenses Expense[]
 }
 
 /// GST sales invoice raised against a customer.
@@ -115,4 +138,82 @@ model Invoice {
   notes         String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+
+  payments Payment[]
+  challans Challan[]
+}
+
+/// Money received from a customer (IN) or paid to a vendor (OUT). An IN payment
+/// may be linked to an invoice, which drives the invoice's paid/partial status.
+model Payment {
+  id          String   @id @default(cuid())
+  partyId     String
+  party       Party    @relation(fields: [partyId], references: [id])
+  invoiceId   String?
+  invoice     Invoice? @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
+  /// "IN" (received from customer) | "OUT" (paid to vendor)
+  direction   String   @default("IN")
+  amountPaise Int
+  paymentDate DateTime @default(now())
+  /// "CASH" | "UPI" | "BANK" | "CHEQUE" | "OTHER"
+  mode        String   @default("CASH")
+  reference   String?
+  notes       String?
+  createdAt   DateTime @default(now())
+
+  @@index([partyId])
+  @@index([invoiceId])
+}
+
+/// Business expense (raw material, labour, transport, diesel, ...).
+model Expense {
+  id          String   @id @default(cuid())
+  category    String
+  description String?
+  amountPaise Int
+  expenseDate DateTime @default(now())
+  /// "CASH" | "UPI" | "BANK" | "CHEQUE" | "OTHER"
+  mode        String   @default("CASH")
+  partyId     String?
+  party       Party?   @relation(fields: [partyId], references: [id], onDelete: SetNull)
+  createdAt   DateTime @default(now())
+
+  @@index([expenseDate])
+}
+
+/// Delivery challan — record of goods dispatched to a customer.
+model Challan {
+  id              String   @id @default(cuid())
+  challanNumber   String   @unique
+  partyId         String
+  party           Party    @relation(fields: [partyId], references: [id])
+  invoiceId       String?
+  invoice         Invoice? @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
+  challanDate     DateTime @default(now())
+  vehicleNo       String?
+  driverName      String?
+  deliveryAddress String?
+  /// JSON-encoded { description, quantity, unit }[]
+  items           String
+  notes           String?
+  createdAt       DateTime @default(now())
+
+  @@index([partyId])
+}
+
+/// First-party website analytics: page views and click events (call / WhatsApp / quote).
+model SiteEvent {
+  id        String   @id @default(cuid())
+  /// "view" | "call" | "whatsapp" | "quote_submit"
+  type      String
+  path      String
+  referrer  String?
+  /// Traffic source bucket: "google" | "direct" | "social" | "other" | utm_source
+  source    String?
+  device    String?
+  visitorId String?
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([type, createdAt])
 }

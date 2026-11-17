@@ -6,6 +6,9 @@ import {
   createProduct,
   updateProduct,
   deleteProduct,
+  setProductBilling,
+  DEFAULT_BILLING,
+  type ProductBilling,
   type ProductInput,
   type ProductImage,
 } from "@/lib/products";
@@ -63,6 +66,17 @@ function parseFormData(formData: FormData): ProductInput {
   };
 }
 
+function parseBilling(formData: FormData): ProductBilling {
+  const gst = parseFloat(String(formData.get("gstRate") ?? ""));
+  const rate = parseFloat(String(formData.get("rate") ?? ""));
+  return {
+    hsnCode: String(formData.get("hsnCode") ?? "").trim() || DEFAULT_BILLING.hsnCode,
+    unit: String(formData.get("unit") ?? "").trim() || DEFAULT_BILLING.unit,
+    gstRate: Number.isFinite(gst) && gst >= 0 && gst <= 100 ? gst : DEFAULT_BILLING.gstRate,
+    rate: Number.isFinite(rate) && rate >= 0 ? rate : 0,
+  };
+}
+
 function validate(input: ProductInput): string | null {
   if (!input.slug) return "Slug is required.";
   if (!/^[a-z0-9-]+$/.test(input.slug)) {
@@ -83,7 +97,8 @@ export async function createProductAction(
   if (validationError) return { error: validationError };
 
   try {
-    await createProduct(input);
+    const created = await createProduct(input);
+    await setProductBilling(created.id, parseBilling(formData));
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     if (message.includes("Unique constraint")) {
@@ -108,6 +123,7 @@ export async function updateProductAction(
 
   try {
     await updateProduct(id, input);
+    await setProductBilling(id, parseBilling(formData));
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     if (message.includes("Unique constraint")) {
